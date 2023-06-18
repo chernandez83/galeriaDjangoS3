@@ -1,0 +1,19 @@
+python -m venv env
+env\Scripts\activate
+pip install django
+pip install boto3
+pip install awscli
+# crear usuario en IAM
+aws configure
+# credenciales en texto plano C:\Users\user\.aws\credentials
+
+django-admin startproject galeriaS3
+python manage.py startapp albums
+python manage.py makemigrations
+python manage.py migrate
+python manage.py runserver
+
+# settings.py
+# registrar cada app en INSTALLED_APPS
+# crear el directorio templates a nivel de manage.py
+# agregar 'DIRS': ['templates'], en TEMPLATES
