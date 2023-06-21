@@ -1,42 +1,47 @@
 {% extends 'base/base.html' %}
 
 {% block content %}
+{# {{ form }} #}
+{% include 'albums/snippets/modal.html' %}
+
+<div class="row mt-2">
+    <div class="col-6">
+        <h2>Galería</h2>
+    </div>
+    <div class="col-6 text-end">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#crearAlbum">
+            Crear Álbum
+        </button>
+    </div>
+</div>
 
 <div class="row">
     <div class="col">
-        <h2>Galería</h2>
-    </div>
-</div>
-{# {{ form }} #}
-
-<!-- Button trigger modal -->
-<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#crearAlbum">
-    Crear Álbum
-</button>
-
-<!-- Modal -->
-<div class="modal fade" id="crearAlbum" tabindex="-1" aria-labelledby="crearAlbumLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h1 class="modal-title fs-5" id="crearAlbumLabel">Nuevo Álbum</h1>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cancelar"></button>
-            </div>
-            <form action="" method="POST">
-                <div class="modal-body">
-                    {% csrf_token %}
-                    {% for field in form %}
-                    <div class="form-group">
-                        {{ field }}
-                    </div>
-                    {% endfor %}
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <input class="btn btn-primary" type="submit" value="Crear">
-                </div>
-            </form>
-        </div>
+        <table class="table table-hover">
+            <thead class="table-dark">
+              <tr>
+                <th scope="col">Título</th>
+                <th scope="col">Fecha de creación</th>
+                <th scope="col">Items</th>
+                <th scope="col">Tamaño</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for album in object_list %}
+              <tr>
+                <th scope="row">
+                    <i class="fa-solid fa-folder"></i>
+                    <a href="{% url 'albums:detail' album.id %}">
+                        {{ album.title }}
+                    </a>
+                </th>
+                <td>{{ album.created_at }}</td>
+                <td>0</td>
+                <td>0</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
     </div>
 </div>
 
