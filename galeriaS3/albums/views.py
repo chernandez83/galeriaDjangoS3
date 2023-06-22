@@ -1,4 +1,5 @@
-from typing import Any, Dict
+from django.conf import settings
+
 from django.shortcuts import render, redirect
 from django.views.generic import DetailView, ListView
 
@@ -29,6 +30,7 @@ def create(request):
     form = AlbumForm(request.POST or None)
 
     if request.method == 'POST' and form.is_valid():
-        album = form.save()
+        #album = form.save()
+        album = Album.objects.create_by_aws(bucket=settings.BUCKET, title=form.cleaned_data['title'], description=form.cleaned_data['description'])
 
         return redirect('albums:list')

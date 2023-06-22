@@ -3,7 +3,9 @@ env\Scripts\activate
 pip install django
 pip install boto3
 pip install awscli
-# crear usuario en IAM
+# crear grupo s3 y asignar permisos
+# crear usuario en IAM y agregar a grupo s3 
+# crear bucket <-- ! Importante ! galerias3
 aws configure
 # credenciales en texto plano C:\Users\user\.aws\credentials
 
@@ -17,3 +19,15 @@ python manage.py runserver
 # registrar cada app en INSTALLED_APPS
 # crear el directorio templates a nivel de manage.py
 # agregar 'DIRS': ['templates'], en TEMPLATES
+
+python manage.py startapp images
+python manage.py makemigrations
+python manage.py migrate
+
+#########################################################################
+python galeriaS3\manage.py shell
+from albums.models import Album
+album = Album.objects.first()
+album
+from AWS.aws import create_folder
+create_folder('galerias3', album.title)
