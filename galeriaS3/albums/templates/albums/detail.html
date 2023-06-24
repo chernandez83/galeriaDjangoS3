@@ -1,12 +1,22 @@
 {% extends 'base/base.html' %}
 
+{% block css %}
+<style>
+    .row-image {
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 {% include 'images/snippets/modal.html' %}
+
 <div class="row">
     <div class="col">
         <h1>{{ object }}</h1>
     </div>
 </div>
+
 <div class="row">
     <div class="col">
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#subirImagen">
@@ -14,4 +24,61 @@
         </button>
     </div>
 </div>
+
+<div class="row mt-2">
+    <div class="col-8">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Fecha de creación</th>
+                    <th>Size</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for image in images %}
+                    <tr class="row-image" image-id="{{ image.id }}">
+                        <td>
+                            <input type="hidden" value="{{ image.url }}" id="image-preview-{{ image.id }}">
+                            {{ image.name }}
+                        </td>
+                        <td>{{ image.created_at }}</td>
+                        <td>{{ image.size }}</td>
+                        <td>
+                            <div class="dropdown">
+                                <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                    ...
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a href="" class="dropdown-item">Vista previa</a></li>
+                                    <li><a href="" class="dropdown-item">Descargar</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a href="" class="dropdown-item">Eliminar</a></li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="col-4">
+        <img src="" alt="" width="300" height="300" id="image-preview">
+    </div>
+</div>
+
+{% endblock %}
+
+{% block js %}
+<script>
+    const imagePreview = document.getElementById('image-preview');
+    document.querySelectorAll('.row-image').forEach((element) => {
+        element.addEventListener('click', function(event) {
+            let imageId = this.getAttribute('image-id');
+            let input = document.getElementById('image-preview-' + imageId);
+            imagePreview.src = input.value;
+        })
+    });
+</script>
 {% endblock %}

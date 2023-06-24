@@ -6,7 +6,9 @@ class AlbumManager(models.Manager):
     def create_by_aws(self, bucket, title, description):
         
         key = title.replace(' ','_').lower()
-        if create_folder(bucket, key):
+        key = create_folder(bucket, key)
+        
+        if key:
             return self.create(title=title, description=description, 
                                bucket=bucket, key=key)
 
@@ -18,6 +20,10 @@ class Album(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     
     objects = AlbumManager()
+    
+    @property
+    def images(self):
+        return self.image_set.all()
     
     def __str__(self):
         return self.title

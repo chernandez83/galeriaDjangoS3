@@ -11,5 +11,9 @@ class Image(models.Model):
     album = models.ForeignKey(Album, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     
+    @property
+    def url(self):
+        return f'https://{self.bucket}.s3.amazonaws.com/{self.key}'
+    
     def __str__(self):
         return self.name
