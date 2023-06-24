@@ -11,12 +11,12 @@
 {% block content %}
 {% include 'images/snippets/modal.html' %}
 
-<div class="row">
+<div class="row mt-2">
     <div class="col">
-        <h1>{{ object }}</h1>
+        <h4><a href="{% url 'albums:list' %}">Galería</a>/{{ object }}</h4>
     </div>
 </div>
-
+<hr>
 <div class="row">
     <div class="col">
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#subirImagen">
@@ -25,7 +25,7 @@
     </div>
 </div>
 
-<div class="row mt-2">
+<div class="row">
     <div class="col-8">
         <table class="table">
             <thead>
@@ -41,7 +41,13 @@
                     <tr class="row-image" image-id="{{ image.id }}">
                         <td>
                             <input type="hidden" value="{{ image.url }}" id="image-preview-{{ image.id }}">
-                            {{ image.name }}
+                            <div id="image-name-{{ image.id }}">
+                                {{ image.title }}
+                            </div>
+                            <form action="{% url 'images:update' image.id %}" method="POST" class="image-form" image-id="{{ image.id }}">
+                                {% csrf_token %}
+                                <input type="hidden" value="{{ image.title }}" class="form-control" id="image-input-name-{{ image.id }}" name="name">
+                            </form>
                         </td>
                         <td>{{ image.created_at }}</td>
                         <td>{{ image.size }}</td>
@@ -51,8 +57,9 @@
                                     ...
                                 </button>
                                 <ul class="dropdown-menu">
-                                    <li><a href="" class="dropdown-item">Vista previa</a></li>
-                                    <li><a href="" class="dropdown-item">Descargar</a></li>
+                                    <li><a href="{{ image.url }}" target="_blank" class="dropdown-item">Vista previa</a></li>
+                                    <li><a href="" class="dropdown-item image-edit" image-id="{{ image.id }}">Cambiar nombre</a></li>
+                                    <li><a href="" class="dropdown-item" image-id="{{ image.id }}">Descargar</a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a href="" class="dropdown-item">Eliminar</a></li>
                                 </ul>
@@ -73,12 +80,73 @@
 {% block js %}
 <script>
     const imagePreview = document.getElementById('image-preview');
+    const imageDefault = 'https://galerias3.s3.us-west-1.amazonaws.com/1x1.png';
+
+    function selectRow(row) {
+        const imageId = row.getAttribute('image-id');
+        const input = document.getElementById('image-preview-' + imageId);
+        imagePreview.src = input.value;
+
+        document.querySelectorAll('.table-active').forEach((element) => {
+            element.classList.remove('table-active')
+        });
+        row.classList.add('table-active');
+    }
+
+    function setDefaultImage() {
+        let rows = document.getElementsByTagName('tr');
+
+        if (rows.length >= 2) {
+            selectRow(rows[1]);
+        } else {
+            imagePreview.src = imageDefault;
+        }
+    }
+
     document.querySelectorAll('.row-image').forEach((element) => {
         element.addEventListener('click', function(event) {
-            let imageId = this.getAttribute('image-id');
-            let input = document.getElementById('image-preview-' + imageId);
-            imagePreview.src = input.value;
-        })
+            selectRow(this);
+        });
     });
+
+    document.querySelectorAll('.image-edit').forEach((element) => {
+        element.addEventListener('click', function(event) {
+            event.preventDefault();
+            const imageId = this.getAttribute('image-id');
+            const input = document.getElementById('image-input-name-' + imageId);
+
+            const div = document.getElementById('image-name-' + imageId);
+            div.style.display = 'none';
+            input.setAttribute('type', 'text');
+        });
+    });
+
+    document.querySelectorAll('.image-form').forEach((element) => {
+        element.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            fetch(this.action, {
+                body: new FormData(this),
+                method: 'POST',
+            }).then((response) => {
+                return response.json();
+            }).then((data) => {
+                const imageId = this.getAttribute('image-id');
+                
+                const input = document.getElementById('image-input-name-' + imageId);
+                input.value = data.name;
+                input.setAttribute('type', 'hidden');
+
+                const div = document.getElementById('image-name-' + imageId);
+                div.innerHTML = data.name;
+                div.style.display = 'block';
+
+                const preview = document.getElementById('image-preview-' + imageId);
+                preview.value = data.url;
+            });
+        });
+    });
+
+    setDefaultImage();
 </script>
 {% endblock %}
