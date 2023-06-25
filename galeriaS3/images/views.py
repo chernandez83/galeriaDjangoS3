@@ -1,5 +1,6 @@
 from django.shortcuts import redirect, get_object_or_404
 from django.http import JsonResponse
+from django.urls import reverse
 
 from django.conf import settings
 
@@ -8,7 +9,7 @@ from .forms import UploadFileForm
 
 from albums.models import Album
 
-from AWS import upload_image
+from AWS import upload_image, delete_file
 
 def upload(request):
     if request.method == 'POST':
@@ -37,7 +38,7 @@ def upload(request):
 
 
 def update(request, pk):
-    image = get_object_or_404(Image, id=pk)
+    image = get_object_or_404(Image, pk=pk)
     
     if request.method == 'POST':
         new_name = request.POST.get('name', None)
@@ -51,3 +52,23 @@ def update(request, pk):
             'url': image.url,
         }
     )
+
+
+def show(request, pk):
+    image = get_object_or_404(Image, pk=pk)
+    
+    return JsonResponse({
+        'id': image.id,
+        'name': image.name,
+        'delete_url': reverse('images:delete', kwargs={'pk': image.pk})
+    })
+
+
+def delete(request, pk):
+    image = get_object_or_404(Image, pk=pk)
+    album = image.album
+    
+    if delete_file(image.bucket, image.key):
+        image.delete()
+    
+    return redirect('albums:detail', album.id)

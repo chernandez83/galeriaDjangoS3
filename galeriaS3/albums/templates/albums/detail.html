@@ -10,6 +10,7 @@
 
 {% block content %}
 {% include 'images/snippets/modal.html' %}
+{% include 'images/snippets/delete.html' %}
 
 <div class="row mt-2">
     <div class="col">
@@ -61,7 +62,7 @@
                                     <li><a href="" class="dropdown-item image-edit" image-id="{{ image.id }}">Cambiar nombre</a></li>
                                     <li><a href="" class="dropdown-item" image-id="{{ image.id }}">Descargar</a></li>
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a href="" class="dropdown-item">Eliminar</a></li>
+                                    <li><a href="{% url 'images:show' image.id %}" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#deleteModal">Eliminar</a></li>
                                 </ul>
                             </div>
                         </td>
@@ -144,6 +145,20 @@
                 const preview = document.getElementById('image-preview-' + imageId);
                 preview.value = data.url;
             });
+        });
+    });
+
+    const deleteModal = document.getElementById('deleteModal');
+    deleteModal.addEventListener('show.bs.modal', event => {
+        const button = event.relatedTarget; // botón que lanzó el modal
+        fetch(button.href).then((response) => {
+            return response.json();
+        }).then(function(data) {
+            const strongName = document.getElementById('strong-name');
+            strongName.innerText = data.name;
+
+            const deleteButton = document.getElementById('delete-modal-button');
+            deleteButton.href = data.delete_url;
         });
     });
 
