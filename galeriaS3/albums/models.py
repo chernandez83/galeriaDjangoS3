@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models import Sum
+
 from AWS import create_folder
 
 class AlbumManager(models.Manager):
@@ -24,6 +26,13 @@ class Album(models.Model):
     @property
     def images(self):
         return self.image_set.all()
+    
+    @property
+    def size(self):
+        if self.images:
+            return round(self.images.aggregate(Sum('size'))['size__sum'] / 1024, 2)
+        else:
+            return 0
     
     def __str__(self):
         return self.title

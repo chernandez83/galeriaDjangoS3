@@ -2,7 +2,16 @@ from django.db import models
 
 from albums.models import Album
 
-from AWS import rename_file
+from AWS import rename_file, delete_file
+
+class ImageManager(models.Manager):
+    
+    def delete_by_aws(self, id):
+        image = self.filter(id=id).first()
+        
+        if image and delete_file(image.bucket, image.key):
+            image.delete()
+            return id
 
 class Image(models.Model):
     key = models.CharField(max_length=100, null=False, blank=False)
@@ -12,6 +21,8 @@ class Image(models.Model):
     size = models.IntegerField()
     album = models.ForeignKey(Album, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    objects = ImageManager()
     
     @property
     def url(self):

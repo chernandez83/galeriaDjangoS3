@@ -35,9 +35,9 @@
                         {{ album.title }}
                     </a>
                 </th>
-                <td>{{ album.created_at }}</td>
-                <td>0</td>
-                <td>0</td>
+                <td>{{ album.created_at | date:'d M Y' }}</td>
+                <td>{{ album.images.count }}</td>
+                <td>{{ album.size }} Kb</td>
               </tr>
               {% endfor %}
             </tbody>
