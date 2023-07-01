@@ -1,8 +1,14 @@
 import json
+import shutil
+
+from pathlib import Path
+
+from wsgiref.util import FileWrapper
 
 from django.shortcuts import redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
 from django.urls import reverse
+from django.template.loader import get_template
 
 from django.conf import settings
 
@@ -13,7 +19,7 @@ from .forms import UploadFileForm
 
 from albums.models import Album
 
-from AWS import upload_image, delete_file, get_mediafile_content
+from AWS import upload_image, delete_file, get_mediafile_content, download_file
 
 def upload(request):
     if request.method == 'POST':
@@ -100,3 +106,39 @@ def download(request, pk):
     response['Content-Disposition'] = f'attachment; filename={image.name}'
     
     return response
+
+
+def download_many(request):
+    dir_path = 'tmp/images'
+    Path(dir_path).mkdir(parents=True, exist_ok=True)
+    
+    for id in request.GET.get('ids', '').split(','):
+        image = Image.objects.filter(id=int(id)).first()
+        
+        if image:
+            local_path = dir_path + '/' + image.name
+            download_file(image.bucket, image.key, local_path)
+    
+    shutil.make_archive('tmp/images', 'zip', dir_path)
+    
+    wrapper = FileWrapper(open('tmp/images.zip', 'rb'))
+    
+    response = HttpResponse(wrapper, content_type='application/zip')
+    response['Content-Disposition'] = 'attachment; filename="images.zip"'
+    
+    return response
+
+
+@csrf_exempt
+def search(request):
+    
+    if request.method == 'GET' and request.GET.get('q'):
+        template = get_template('images/snippets/image.html')
+        
+        images = Image.objects.filter(name__icontains=request.GET['q'])
+        images = [template.render({'image': image}) for image in images]
+        
+        return JsonResponse({
+            'success': True,
+            'images': images,
+        })

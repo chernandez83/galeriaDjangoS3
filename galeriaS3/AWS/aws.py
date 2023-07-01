@@ -69,3 +69,14 @@ def get_mediafile_content(bucket, mediafile_key):
 
     except Exception as error:
         print(error)
+
+
+def download_file(bucket, file_key, local_path):
+    try:
+        s3 = boto3.client('s3')
+        
+        with open(local_path, 'wb') as file:
+            s3.download_fileobj(bucket, file_key, file)
+        
+    except Exception as error:
+        print(error)

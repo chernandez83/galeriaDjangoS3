@@ -17,13 +17,20 @@
         <h4><a href="{% url 'albums:list' %}">Galería</a>/{{ object }}</h4>
     </div>
 </div>
+<div class="row mt-2">
+    <div class="col">
+        <form action="{% url 'images:search' %}" id="image-search">
+            <input type="text" class="form-control" name="q" id="q" placeholder="Buscar imagen">
+        </form>
+    </div>
+</div>
 <hr>
 <div class="row">
     <div class="col">
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#subirImagen">
             Nueva Imagen
         </button>
-        <a href="#" class="btn btn-info disabled" id="download-images">
+        <a href="{% url 'images:download_many' %}" class="btn btn-info disabled" id="download-images">
             Descargar
         </a>
         <a href="{% url 'images:delete_many' %}" class="btn btn-danger disabled" id="delete-images">
@@ -48,41 +55,9 @@
                     <th></th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="table-images">
                 {% for image in images %}
-                    <tr class="row-image" image-id="{{ image.id }}" id="image-{{ image.id }}">
-                        <td>
-                            <div class="form-check">
-                                <input type="checkbox" class="form-check-input check-images" image-id="{{ image.id }}">
-                            </div>
-                        </td>
-                        <td>
-                            <input type="hidden" value="{{ image.url }}" id="image-preview-{{ image.id }}">
-                            <div id="image-name-{{ image.id }}">
-                                {{ image.title }}
-                            </div>
-                            <form action="{% url 'images:update' image.id %}" method="POST" class="image-form" image-id="{{ image.id }}">
-                                {% csrf_token %}
-                                <input type="hidden" value="{{ image.title }}" class="form-control" id="image-input-name-{{ image.id }}" name="name">
-                            </form>
-                        </td>
-                        <td>{{ image.created_at }}</td>
-                        <td>{{ image.size }}</td>
-                        <td>
-                            <div class="dropdown">
-                                <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown">
-                                    ...
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li><a href="{{ image.url }}" target="_blank" class="dropdown-item">Vista previa</a></li>
-                                    <li><a href="" class="dropdown-item image-edit" image-id="{{ image.id }}">Cambiar nombre</a></li>
-                                    <li><a href="{% url 'images:download' image.id %}" class="dropdown-item" image-id="{{ image.id }}">Descargar</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a href="{% url 'images:show' image.id %}" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#deleteModal">Eliminar</a></li>
-                                </ul>
-                            </div>
-                        </td>
-                    </tr>
+                {% include 'images/snippets/image.html' %}
                 {% endfor %}
             </tbody>
         </table>
@@ -99,8 +74,14 @@
     const imagePreview = document.getElementById('image-preview');
     const imageDefault = 'https://galerias3.s3.us-west-1.amazonaws.com/1x1.png';
 
+    const deleteModal = document.getElementById('deleteModal');
+
+    const checkAllImages = document.getElementById('check-all-image');
+
     const downloadImages = document.getElementById('download-images');
     const deleteImages = document.getElementById('delete-images');
+
+    const imageSearch = document.getElementById('image-search');
 
     function selectRow(row) {
         const imageId = row.getAttribute('image-id');
@@ -125,7 +106,7 @@
 
     function checkInputs() {
         const images = document.querySelectorAll('input.check-images[type="checkbox"]:checked');
-        
+
         if (images.length >= 2) {
             downloadImages.classList.remove('disabled');
             deleteImages.classList.remove('disabled');
@@ -135,56 +116,75 @@
         }
     }
 
-    document.querySelectorAll('.row-image').forEach((element) => {
-        element.addEventListener('click', function(event) {
-            selectRow(this);
-        });
-    });
+    function getSelectedImagesIds() {
+        let ids = [];
+        const images = document.querySelectorAll('input.check-images[type="checkbox"]:checked');
 
-    document.querySelectorAll('.image-edit').forEach((element) => {
-        element.addEventListener('click', function(event) {
-            event.preventDefault();
-            const imageId = this.getAttribute('image-id');
-            const input = document.getElementById('image-input-name-' + imageId);
+        for (let i = 0; i < images.length; i++) {
+            let imageId = images[i].getAttribute('image-id');
+            ids.push(imageId);
+        }
 
-            const div = document.getElementById('image-name-' + imageId);
-            div.style.display = 'none';
-            input.setAttribute('type', 'text');
-        });
-    });
+        return ids;
+    }
 
-    document.querySelectorAll('.image-form').forEach((element) => {
-        element.addEventListener('submit', function(event) {
-            event.preventDefault();
-
-            fetch(this.action, {
-                body: new FormData(this),
-                method: 'POST',
-            }).then((response) => {
-                return response.json();
-            }).then((data) => {
-                const imageId = this.getAttribute('image-id');
-                
-                const input = document.getElementById('image-input-name-' + imageId);
-                input.value = data.name;
-                input.setAttribute('type', 'hidden');
-
-                const div = document.getElementById('image-name-' + imageId);
-                div.innerHTML = data.name;
-                div.style.display = 'block';
-
-                const preview = document.getElementById('image-preview-' + imageId);
-                preview.value = data.url;
+    function registerEvents() {
+        document.querySelectorAll('.row-image').forEach((element) => {
+            element.addEventListener('click', function (event) {
+                selectRow(this);
             });
         });
-    });
 
-    const deleteModal = document.getElementById('deleteModal');
+        document.querySelectorAll('.image-edit').forEach((element) => {
+            element.addEventListener('click', function (event) {
+                event.preventDefault();
+                const imageId = this.getAttribute('image-id');
+                const input = document.getElementById('image-input-name-' + imageId);
+
+                const div = document.getElementById('image-name-' + imageId);
+                div.style.display = 'none';
+                input.setAttribute('type', 'text');
+            });
+        });
+
+        document.querySelectorAll('.image-form').forEach((element) => {
+            element.addEventListener('submit', function (event) {
+                event.preventDefault();
+
+                fetch(this.action, {
+                    body: new FormData(this),
+                    method: 'POST',
+                }).then((response) => {
+                    return response.json();
+                }).then((data) => {
+                    const imageId = this.getAttribute('image-id');
+
+                    const input = document.getElementById('image-input-name-' + imageId);
+                    input.value = data.name;
+                    input.setAttribute('type', 'hidden');
+
+                    const div = document.getElementById('image-name-' + imageId);
+                    div.innerHTML = data.name;
+                    div.style.display = 'block';
+
+                    const preview = document.getElementById('image-preview-' + imageId);
+                    preview.value = data.url;
+                });
+            });
+        });
+
+        document.querySelectorAll('.check-images').forEach((element) => {
+            element.addEventListener('change', function (event) {
+                checkInputs();
+            });
+        });
+    }
+
     deleteModal.addEventListener('show.bs.modal', event => {
         const button = event.relatedTarget; // botón que lanzó el modal
         fetch(button.href).then((response) => {
             return response.json();
-        }).then(function(data) {
+        }).then(function (data) {
             const strongName = document.getElementById('strong-name');
             strongName.innerText = data.name;
 
@@ -193,38 +193,25 @@
         });
     });
 
-    const checkAllImages = document.getElementById('check-all-image');
-    checkAllImages.addEventListener('change', function(event) {
+    checkAllImages.addEventListener('change', function (event) {
         document.querySelectorAll('.check-images').forEach((element) => {
             element.checked = this.checked;
         });
         checkInputs();
     });
 
-    document.querySelectorAll('.check-images').forEach((element) => {
-        element.addEventListener('change', function(event) {
-            checkInputs();
-        });
-    });
-
-    deleteImages.addEventListener('click', function(event) {
+    deleteImages.addEventListener('click', function (event) {
         event.preventDefault();
-        let ids = [];
-        const images = document.querySelectorAll('input.check-images[type="checkbox"]:checked');
-
-        for(let i = 0; i < images.length; i++) {
-            let imageId = images[i].getAttribute('image-id');
-            ids.push(imageId);
-        }
+        let ids = getSelectedImagesIds();
 
         fetch(this.href, {
             method: 'POST',
-            body: JSON.stringify({'ids': ids}),
+            body: JSON.stringify({ 'ids': ids }),
         }).then((response) => {
             return response.json();
-        }).then(function(data) {
+        }).then(function (data) {
             console.log(data.ids);
-            for(let i = 0; i < data.ids.length; i++) {
+            for (let i = 0; i < data.ids.length; i++) {
                 let imageId = data.ids[i];
                 document.getElementById('image-' + imageId).remove();
             }
@@ -232,6 +219,33 @@
         });
     });
 
+    downloadImages.addEventListener('click', function (event) {
+        event.preventDefault();
+
+        let ids = getSelectedImagesIds();
+
+        window.location.href = this.href + '?ids=' + ids;
+
+    });
+
+    imageSearch.addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        if (this.q.value != '') {
+            fetch(this.action + '?q=' + this.q.value).then((response) => {
+                return response.json();
+            }).then((data) => {
+                let tbody = document.getElementById('table-images');
+                tbody.innerHTML = data.images.toString().replaceAll(',', '');
+                registerEvents();
+                setDefaultImage();
+            });
+        } else {
+            location.reload();
+        }
+    });
+
+    registerEvents();
     setDefaultImage();
 </script>
 {% endblock %}
